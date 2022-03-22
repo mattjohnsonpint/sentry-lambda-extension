@@ -1,2 +1,3 @@
 # sentry-lambda-extension
-WIP
+
+WIP A AWS Lambda Extension for instrumenting Lambda functions.
