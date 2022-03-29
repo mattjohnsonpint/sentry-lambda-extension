@@ -12,4 +12,4 @@ WORKDIR /work
 COPY . .
 
 # BUILD IT!
-RUN cargo build --release --locked --target=${BUILD_TARGET}
+#RUN cargo build --release --locked --target=${BUILD_TARGET}
