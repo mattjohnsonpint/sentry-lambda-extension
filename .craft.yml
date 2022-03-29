@@ -3,6 +3,7 @@ changelogPolicy: auto
 
 targets:
   - name: github
+    includeNames: /^sentry-lambda-extension$/i
   - name: registry
     apps:
       app:sentry-lambda-extension:
