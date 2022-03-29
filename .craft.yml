@@ -1,0 +1,13 @@
+minVersion: 0.23.1
+changelogPolicy: auto
+
+targets:
+  - name: github
+  - name: registry
+    apps:
+      app:sentry-lambda-extension:
+        urlTemplate: https://downloads.sentry-cdn.com/sentry-lambda-extension/{{version}}/{{file}}
+        includeNames: /^sentry-lambda-extension$/i
+
+requireNames:
+  - /^sentry-lambda-extension$/
