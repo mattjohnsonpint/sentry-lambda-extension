@@ -5,9 +5,13 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-reqwest = { version = "0.10.8", default-features = false, features = ["blocking", "json"] }
+failure = "0.1.8"
+serde = { version = "=1.0.114", features = ["derive"] }
+serde_json = "1.0.55"
+reqwest = { version = "0.11.1", default-features = false, features = ["blocking", "json"] }
+relay-server = { git = "https://github.com/getsentry/relay" }
+relay-config = { git = "https://github.com/getsentry/relay" }
+relay-log = { git = "https://github.com/getsentry/relay" }
 
 [[bin]]
 name = "sentry-lambda-extension"
