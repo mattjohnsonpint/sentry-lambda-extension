@@ -1,3 +1,15 @@
+## 0.1.3
+
+### Various fixes & improvements
+
+- Fixed bump version script for real (40ac0643) by @antonpirker
+- Fixed bump version script. (453608d8) by @antonpirker
+- Added license file (42d08d16) by @antonpirker
+- Added bump-version script. Some housekeeping. (36f2c7a8) by @antonpirker
+- Added google cloud storage target (e9dadf4a) by @antonpirker
+- Fix build.yml binary path (b47fc967) by @sl0thentr0py
+- fix: Bake in relay (#1) by @sl0thentr0py
+
 ## 0.1.2
 
 ### Various fixes & improvements
