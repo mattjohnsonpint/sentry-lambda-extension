@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eux
+set -euo pipefail
 
 BUILD_IMAGE="sentry-lambda-extension-builder:latest"
 
