@@ -1,15 +1,13 @@
-FROM amd64/rust:alpine 
-
-ARG BUILD_ARCH=x86_64
-ENV BUILD_ARCH=${BUILD_ARCH}
-
-ENV BUILD_TARGET=${BUILD_ARCH}-unknown-linux-musl
-
-RUN apk add musl-dev
+FROM lambci/lambda-base-2:build
 
 WORKDIR /work
 
+# install rust toolchain
+RUN curl https://sh.rustup.rs -sSf | \
+    sh -s -- --default-toolchain stable -y
+
+ENV PATH=/root/.cargo/bin:$PATH
+
 COPY . .
 
-# BUILD IT!
-#RUN cargo build --release --locked --target=${BUILD_TARGET}
+#RUN cargo build --release --locked --target=x86_64-unknown-linux-gnu

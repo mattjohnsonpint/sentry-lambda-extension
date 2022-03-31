@@ -1,4 +1,5 @@
 use anyhow::{ensure, Result};
+use relay_config::Config;
 use reqwest::blocking::Client;
 use reqwest::StatusCode;
 use serde::Deserialize;
@@ -8,7 +9,6 @@ use std::env;
 use std::fs;
 use std::io::BufReader;
 use std::time;
-use std::process::Command;
 
 const EXTENSION_NAME: &str = "aws-lambda-extension";
 const EXTENSION_NAME_HEADER: &str = "Lambda-Extension-Name";
@@ -101,20 +101,24 @@ fn process_result(req_id: String) {
     }
 }
 
-fn main() -> Result<()> {
-    println!("Starting Sentry Lambda Extension...");
-
-
+fn start_relay() -> Result<()> {
     // Run relay in background
     println!("Starting Sentry `relay` in background...");
-    Command::new("/opt/relay")
-            .arg("--config")
-            .arg("/opt/.relay/")
-            .arg("run")
-            .spawn()
-            .expect("relay command failed to start");
-    
-    // Register the Lambda extension
+
+    let config = Config::from_path("/opt/.relay").map_err(failure::Fail::compat)?;
+    // println!("{}", config.to_yaml_string().unwrap());
+
+    relay_log::init(config.logging(), config.sentry());
+    std::thread::spawn(|| relay_server::run(config));
+
+    Ok(())
+}
+
+fn main() -> Result<()> {
+    start_relay()?;
+
+    //Register the Lambda extension
+    println!("Starting Sentry Lambda Extension...");
     let client = Client::builder().timeout(None).build()?;
     let r = register(&client)?;
     let mut prev_request: Option<String> = Option::None;

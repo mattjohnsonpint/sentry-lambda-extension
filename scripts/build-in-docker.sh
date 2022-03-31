@@ -14,4 +14,4 @@ DOCKER_RUN_OPTS="
   $BUILD_IMAGE
 "
 docker run $DOCKER_RUN_OPTS \
-  cargo build --release --locked --target=x86_64-unknown-linux-musl
+  cargo build --release --locked --target=x86_64-unknown-linux-gnu
