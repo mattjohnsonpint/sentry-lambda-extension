@@ -14,6 +14,39 @@ AWS Lambda Extension for instrumenting Lambda functions.
 
 If you need help setting up or configuring the Python SDK (or anything else in the Sentry universe) please head over to the [Sentry Community on Discord](https://discord.com/invite/Ww9hbqr). There is a ton of great people in our Discord community ready to help you!
 
+## How the Sentry Lambda extension works
+
+```mermaid
+sequenceDiagram
+    participant AWS Lambda Service
+    participant Lambda Function
+    participant Sentry Lambda Extension
+    participant relay
+
+    AWS Lambda Service->>Sentry Lambda Extension: init
+    Sentry Lambda Extension->>relay: start
+    Sentry Lambda Extension->>AWS Lambda Service: HTTP POST /register (invoke/shutdown)
+    Sentry Lambda Extension->>AWS Lambda Service: HTTP GET /next
+
+    AWS Lambda Service->>Lambda Function: invoke
+    AWS Lambda Service->>Sentry Lambda Extension: invoke
+    Lambda Function->>relay: send envelope
+    Lambda Function->>relay: send transaction
+    Lambda Function->>relay: send error
+    Lambda Function-->>AWS Lambda Service: function invocation end
+
+    Sentry Lambda Extension->>AWS Lambda Service: HTTP GET /next
+    AWS Lambda Service->>Lambda Function: invoke
+    AWS Lambda Service->>Sentry Lambda Extension: invoke
+    Lambda Function->>relay: send error
+    Lambda Function-->>AWS Lambda Service: function invocation end
+
+    AWS Lambda Service->>Sentry Lambda Extension: shutdown
+    Sentry Lambda Extension->>relay: shutdown
+    relay-->>Sentry Lambda Extension: relay execution end
+    Sentry Lambda Extension-->>AWS Lambda Service: extension execution end
+```
+
 ## Resources
 
 - [![Documentation](https://img.shields.io/badge/documentation-sentry.io-green.svg)](https://docs.sentry.io/quickstart/)
