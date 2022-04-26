@@ -10,6 +10,41 @@ _Bad software is everywhere, and we're tired of it. Sentry is on a mission to he
 
 AWS Lambda Extension for instrumenting Lambda functions.
 
+## Local development
+
+The extension is a simple Rust project that wraps around Sentry's [relay](https://github.com/getsentry/relay) and is shipped as a binary.
+
+An AWS extension has to talk to the [AWS Lambda Extensions API](https://docs.aws.amazon.com/lambda/latest/dg/runtimes-extensions-api.html). For local development we have to mock this API so we can develop our extension locally. See [Mocking the AWS Lambda environment](#mocking-the-aws-lambda-environment) below.
+
+## Mocking the AWS Lambda environment
+
+### Prerequisites
+
+- Make sure you set the AWS environment variable to localhost port 5000:
+
+  ```bash
+  export AWS_LAMBDA_RUNTIME_API=localhost:5000
+  ```
+
+  (You can also use https://direnv.net/ for setting environment variables.)
+
+- Make sure you have a Python 3 version installed and running on your machine.
+
+### Running the Mock AWS extensions API
+
+Then open a terminal and start our little server, that mocks the AWS Lambda API being run on localhost:5000:
+
+```bash
+cd mock-aws-lambda-extensions-api
+./run.sh
+```
+
+The `run.sh` will
+
+- create a Python virtual environment
+- install necessary Python libraries
+- start the mock API on [http://localhost:5000](http://localhost:5000)
+
 ## Getting help/support
 
 If you need help setting up or configuring the Python SDK (or anything else in the Sentry universe) please head over to the [Sentry Community on Discord](https://discord.com/invite/Ww9hbqr). There is a ton of great people in our Discord community ready to help you!

@@ -8,11 +8,17 @@ use std::collections::HashMap;
 use std::env;
 use std::fs;
 use std::io::BufReader;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::time;
+
+extern crate libc;
+use libc::{raise, SIGTERM};
 
 const EXTENSION_NAME: &str = "aws-lambda-extension";
 const EXTENSION_NAME_HEADER: &str = "Lambda-Extension-Name";
 const EXTENSION_ID_HEADER: &str = "Lambda-Extension-Identifier";
+const SHUTDOWN_TIMEOUT: u64 = 2;
 
 fn base_url() -> Result<String, env::VarError> {
     Ok(format!(
@@ -23,12 +29,14 @@ fn base_url() -> Result<String, env::VarError> {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 struct Tracing {
     pub r#type: String,
     pub value: String,
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 #[serde(rename_all = "UPPERCASE", tag = "eventType")]
 enum NextEventResponse {
     #[serde(rename_all = "camelCase")]
@@ -104,8 +112,8 @@ fn process_result(req_id: String) {
 fn start_relay() -> Result<()> {
     // Run relay in background
     println!("Starting Sentry `relay` in background...");
+    let config = Config::from_path(".relay").map_err(failure::Fail::compat)?;
 
-    let config = Config::from_path("/opt/.relay").map_err(failure::Fail::compat)?;
     // println!("{}", config.to_yaml_string().unwrap());
 
     relay_log::init(config.logging(), config.sentry());
@@ -114,19 +122,52 @@ fn start_relay() -> Result<()> {
     Ok(())
 }
 
+fn ensure_relay_is_running(
+    client: &reqwest::blocking::Client,
+    healthcheck_url: &str,
+) -> Result<()> {
+    println!("Checking if relay is still running...");
+
+    let res = client.get(healthcheck_url).send();
+    match res {
+        Ok(_) => {
+            println!("Relay running. All good.");
+            Ok(())
+        }
+        Err(_) => {
+            println!("Relay NOT running! Trying to start relay...");
+            start_relay()
+        }
+    }
+}
+
 fn main() -> Result<()> {
-    start_relay()?;
+    let config = Config::from_path(".relay").map_err(failure::Fail::compat)?;
+    let relay_url = config.listen_addr().to_string();
+    let healthcheck_url = format!("http://{}/api/relay/healthcheck/ready/", relay_url);
 
     //Register the Lambda extension
     println!("Starting Sentry Lambda Extension...");
     let client = Client::builder().timeout(None).build()?;
-    let r = register(&client)?;
+    let response = register(&client)?;
     let mut prev_request: Option<String> = Option::None;
-    loop {
+
+    let running = Arc::new(AtomicBool::new(true));
+    let r = running.clone();
+
+    ctrlc::set_handler(move || r.store(false, Ordering::SeqCst))?;
+
+    while running.load(Ordering::SeqCst) {
+        ensure_relay_is_running(&client, &healthcheck_url)?;
+
         std::thread::sleep(time::Duration::from_secs(1));
         println!("Waiting for event...");
-        let evt = next_event(&client, &r.extension_id);
-        prev_request.map(process_result);
+        let evt = next_event(&client, &response.extension_id);
+
+        if let Some(request) = prev_request {
+            process_result(request)
+        }
+
         match evt {
             Ok(evt) => match evt {
                 NextEventResponse::Invoke {
@@ -141,6 +182,10 @@ fn main() -> Result<()> {
                     shutdown_reason, ..
                 } => {
                     println!("Exiting: {}", shutdown_reason);
+                    unsafe {
+                        raise(SIGTERM);
+                    }
+                    std::thread::sleep(time::Duration::from_secs(SHUTDOWN_TIMEOUT));
                     return Ok(());
                 }
             },
@@ -151,4 +196,6 @@ fn main() -> Result<()> {
             }
         }
     }
+
+    Ok(())
 }
