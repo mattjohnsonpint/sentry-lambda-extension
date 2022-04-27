@@ -1,5 +1,5 @@
 use anyhow::{ensure, Result};
-use relay_config::Config;
+use relay_config::{Config, OverridableConfig};
 use reqwest::blocking::Client;
 use reqwest::StatusCode;
 use serde::Deserialize;
@@ -109,13 +109,24 @@ fn process_result(req_id: String) {
     }
 }
 
+fn make_config() -> Result<Config> {
+    let mut config = Config::default();
+
+    // TODO(neel): add shutdown_timeout later
+    let overrides = OverridableConfig {
+        mode: Some("proxy".to_string()),
+        ..Default::default()
+    };
+
+    config.apply_override(overrides).map_err(failure::Fail::compat)?;
+    Ok(config)
+}
+
 fn start_relay() -> Result<()> {
     // Run relay in background
     println!("Starting Sentry `relay` in background...");
-    let config = Config::from_path(".relay").map_err(failure::Fail::compat)?;
 
-    // println!("{}", config.to_yaml_string().unwrap());
-
+    let config = make_config()?;
     relay_log::init(config.logging(), config.sentry());
     std::thread::spawn(|| relay_server::run(config));
 
@@ -142,7 +153,7 @@ fn ensure_relay_is_running(
 }
 
 fn main() -> Result<()> {
-    let config = Config::from_path(".relay").map_err(failure::Fail::compat)?;
+    let config = make_config()?;
     let relay_url = config.listen_addr().to_string();
     let healthcheck_url = format!("http://{}/api/relay/healthcheck/ready/", relay_url);
 
