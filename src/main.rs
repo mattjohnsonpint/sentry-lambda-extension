@@ -115,6 +115,7 @@ fn make_config() -> Result<Config> {
     // TODO(neel): add shutdown_timeout later
     let overrides = OverridableConfig {
         mode: Some("proxy".to_string()),
+        shutdown_timeout: Some(SHUTDOWN_TIMEOUT.to_string()),
         ..Default::default()
     };
 
